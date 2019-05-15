@@ -50,7 +50,7 @@ int* dev_pixelClusterCounter, int* dev_tempRedCentroid, int* dev_tempGreenCentro
 {
 	// 1 block, 16x16 threads
 	int threadID = threadIdx.x + threadIdx.y * blockDim.x;
-	//printf("clearPaletteArrays -> %d\n", threadID);
+
 	if(threadID < dev_nCentroids)
 	{
 		// nCentroids long
@@ -178,7 +178,6 @@ void newCentroids(int *dev_tempRedCentroid, int *dev_tempGreenCentroid, int *dev
 		dev_tempGreenCentroid[threadID] = static_cast<int>( (sumGreen/currentPixelCounter) );
 		dev_tempBlueCentroid[threadID] = static_cast<int>( (sumBlue/currentPixelCounter) );
 	}
-
 }
 
 class RGB_TRIPLET
@@ -221,7 +220,13 @@ void initCentroids(const RGB_TRIPLET *inputImgRGB, RGB_TRIPLET *&centroidsRGB, i
 		centroidsRGB->red[i] = inputImgRGB->red[x*y];
 		centroidsRGB->green[i] = inputImgRGB->green[x*y];
 		centroidsRGB->blue[i] = inputImgRGB->blue[x*y];
-		printf("Centroid[%d] = [%d, %d, %d]\n", i, centroidsRGB->red[i] , centroidsRGB->green[i], centroidsRGB->blue[i]);
+		
+		//Only print first 3 centroids to save space in terminal output
+		if (i < 3)
+		{
+			printf("Centroid[%d] = [%d, %d, %d]\n", i, 
+			centroidsRGB->red[i] , centroidsRGB->green[i], centroidsRGB->blue[i]);
+		}
 	}
 }
 
@@ -365,9 +370,11 @@ void compress(RGB_TRIPLET *&inputImgRGB, RGB_TRIPLET *&outputImgRGB, int &inImgS
 	//Each dimension is fixed
 	dim3 dimBLOCK(BLOCK_SIZE, BLOCK_SIZE);
 	
-	printf("\nLaunching %d CUDA kernels\n\n", nCentroids);
+	printf("\nLaunching CUDA kernels\n");
+	printf("Grid : {%d, %d, %d} blocks. Blocks : {%d, %d, %d} threads.\n\n",
+	dimGRID.x, dimGRID.y, dimGRID.z, dimBLOCK.x, dimBLOCK.y, dimBLOCK.z);
 	
-	for(int i = 0; i < 5; i++)
+	for(int i = 0; i < 1; i++)
 	{
 		// Passing image RGB components, palette RGB components, label Array, number of Clusters
 		// Init  arrays' values to 0
@@ -404,7 +411,8 @@ void compress(RGB_TRIPLET *&inputImgRGB, RGB_TRIPLET *&outputImgRGB, int &inImgS
 	CUDA_CALL(cudaMemcpy(pixelClusterCounter, dev_pixelClusterCounter, PALETTE_BYTES, cudaMemcpyDeviceToHost));
 	
 	printf("New centroids:\n");
-	for(int i = 0; i < nCentroids; i++) {
+	int nCentroidsP = nCentroids > 3 ? 3 : nCentroids;
+	for(int i = 0; i < nCentroidsP; i++) {
 		printf("Centroid[%d] = [%d, %d, %d]\n", i, centroidsRGB->red[i], centroidsRGB->green[i], centroidsRGB->blue[i]);
 	}
 	
