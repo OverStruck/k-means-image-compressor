@@ -1,35 +1,8 @@
-#include "dep/lodepng.h" //LodePNG for C (ISO C90) and C++
-#include<random>
-#include <cuda.h>
-#include <stdio.h>
-#include <iostream>
-#include <sys/stat.h>
-#include <cuda_runtime.h>
-#include <sstream>
-//Useful to read Error from CUDA Calls
-#define CUDA_CALL(x) {if((x) != cudaSuccess){ \
-  printf("CUDA error at %s:%d\n",__FILE__,__LINE__); \
-  printf("  %s\n", cudaGetErrorString(cudaGetLastError())); \
-  exit(EXIT_FAILURE);}}
-  
-#ifdef __CUDACC__
-#define CUDA_CALLABLE_MEMBER __host__ __device__
-#else
-#define CUDA_CALLABLE_MEMBER
-#endif
-
-// Number of threads
-#define BLOCK_SIZE 16
-#define GRID_SIZE 256
+#include "kmeansCompressor.h"
 
 // nCentroids and size on device
 __constant__ int dev_nCentroids;
 __constant__ int dev_size;
-
-// global variables
-int nCentroids = 0;
-int PALETTE_BYTES = 0; // nCentroids * sizeof(int)
-int IMAGE_BYTES = 0;  // width * height * sizeof(int)
 
 // R,G,B Centroid's triple on device
 //max number of centroid is 256
@@ -37,43 +10,12 @@ __constant__ int dev_RedCentroid[256];
 __constant__ int dev_GreenCentroid[256];
 __constant__ int dev_BlueCentroid[256];
 
-class RGB_TRIPLET
-{
-	public:
-		int *red, *green, *blue;
-		unsigned int width, height, size;
-		CUDA_CALLABLE_MEMBER RGB_TRIPLET(int IMAGE_BYTES, int w, int h)
-		{
-			red = new int[IMAGE_BYTES];
-			green = new int[IMAGE_BYTES];
-			blue = new int[IMAGE_BYTES];
-			
-			width = w;
-			height = h;
-			size = w * h;
-		}
-		
-		CUDA_CALLABLE_MEMBER ~RGB_TRIPLET()
-		{
-			delete[] red;
-			delete[] green;
-			delete[] blue;
-		}
-};
-
 void initRGB_TRIPLET(RGB_TRIPLET *&rgbTriplet, int BYTES)
 {
 	CUDA_CALL(cudaHostAlloc((void**) &rgbTriplet, sizeof(RGB_TRIPLET), cudaHostAllocWriteCombined | cudaHostAllocMapped));
 	CUDA_CALL(cudaHostAlloc((void**) &rgbTriplet->red, BYTES, cudaHostAllocWriteCombined | cudaHostAllocMapped));
 	CUDA_CALL(cudaHostAlloc((void**) &rgbTriplet->green, BYTES, cudaHostAllocWriteCombined | cudaHostAllocMapped));
 	CUDA_CALL(cudaHostAlloc((void**) &rgbTriplet->blue, BYTES, cudaHostAllocWriteCombined | cudaHostAllocMapped));
-}
-
-//checks file file exits
-inline bool exits(const char* fileName)
-{
-  struct stat buffer;   
-  return (stat (fileName, &buffer) == 0); 
 }
 
 // Clears arrays before each kernel getClusterLabel iteration
@@ -208,98 +150,6 @@ void newCentroids(RGB_TRIPLET *rgbCentroids, const RGB_TRIPLET *rgbSums, int *pi
 	}
 }
 
-void initCentroids(const RGB_TRIPLET *inputImgRGB, RGB_TRIPLET *centroidsRGB, int nCentroids)
-{
-	std::random_device rd;  //Will be used to obtain a seed for the random number engine
-	std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
-	std::uniform_int_distribution<> xDis(0, inputImgRGB->width);
-	std::uniform_int_distribution<> yDis(0, inputImgRGB->height);
-	
-	int x, y;
-	printf("Initializing %d centroids at random:\n", nCentroids);
-	for (int i = 0; i < nCentroids; ++i)
-	{
-		x = xDis(gen);
-		y = yDis(gen);
-		centroidsRGB->red[i] = inputImgRGB->red[x*y];
-		centroidsRGB->green[i] = inputImgRGB->green[x*y];
-		centroidsRGB->blue[i] = inputImgRGB->blue[x*y];
-		
-		//Only print first 3 centroids to save space in terminal output
-		int nCentroidsP = nCentroids > 16 ? 16 : nCentroids;
-		if (i < nCentroidsP)
-		{
-			const int r = centroidsRGB->red[i];
-			const int g = centroidsRGB->green[i];
-			const int b = centroidsRGB->blue[i];
-			
-			std::ostringstream colorBar;
-			colorBar << "\x1b[38;2;" << r << ";" << g << ";" << b << "m" << "█████████████████" << "\x1b[0m\n";
-
-			//char *colorBar = "\x1b[38;2;%d;%d;%dm%s\x1b[0m\n";
-			
-			printf("Centroid[%d] = [%d, %d, %d]\t=>\t%s", i, r, g, b, colorBar.str().c_str());
-		}
-	}
-}
-
-void loadRawImage(const char* inputFile, RGB_TRIPLET *&inputImgRGB, int &inImgSize)
-{
-	printf("Loading image...\n");
-	unsigned int width, height;
-	std::vector<unsigned char> inImg;
-	unsigned error = lodepng::decode(inImg, width, height, inputFile, LCT_RGB);
-    
-	if(error)
-	{
-		std::cout << "Decoder error " << error << ": " << lodepng_error_text(error) << std::endl;
-		exit(-1);
-	}
-	
-	IMAGE_BYTES = (width*height) * sizeof(int);
-	initRGB_TRIPLET(inputImgRGB, IMAGE_BYTES);
-	inputImgRGB->width = width;
-	inputImgRGB->height = height;
-	inImgSize = width * height;
-	inputImgRGB->size = inImgSize;
-	
-	printf("W x H: %d x %d\n", inputImgRGB->width, inputImgRGB->height);
-	
-	printf("Preparing image...\n");
-	int where = 0;
-	for(int i = 0; i < inImgSize*3; i+=3)
-	{
-		inputImgRGB->red[where] = inImg.at(i);
-		inputImgRGB->green[where] = inImg.at(i+1);
-		inputImgRGB->blue[where] = inImg.at(i+2);
-		++where;
-	}
-	printf("RGB channels loaded\n");
-}
-
-void saveRawImage(const char* outputFile, RGB_TRIPLET *&outputImgRGB,  int &inImgSize)
-{
-	// Prepare data for output
-	printf("Writing compressed image...\n");
-    std::vector<unsigned char> outImg;
-	for( int i = 0; i < outputImgRGB->size; ++i)
-	{
-		outImg.push_back(outputImgRGB->red[i]);
-		outImg.push_back(outputImgRGB->green[i]);
-		outImg.push_back(outputImgRGB->blue[i]);
-	}
-	
-	// Output the data
-    unsigned error = lodepng::encode(outputFile, outImg, outputImgRGB->width, outputImgRGB->height, LCT_RGB);
-	
-	//if there's an error, display it
-    if(error)
-	{
-		std::cout << "Decoder error " << error << ": " << lodepng_error_text(error) << std::endl;
-		exit(-1);
-	}
-}
-
 void compress(RGB_TRIPLET *&inputImgRGB, RGB_TRIPLET *&outputImgRGB, int &inImgSize)
 {
 	PALETTE_BYTES = nCentroids * sizeof(int);
@@ -355,7 +205,7 @@ void compress(RGB_TRIPLET *&inputImgRGB, RGB_TRIPLET *&outputImgRGB, int &inImgS
 	printf("Grid : {%d, %d, %d} blocks. Blocks : {%d, %d, %d} threads.\n\n",
 	dimGRID.x, dimGRID.y, dimGRID.z, dimBLOCK.x, dimBLOCK.y, dimBLOCK.z);
 	
-	for(int i = 0; i < 5; i++)
+	for(int i = 0; i < 1; i++)
 	{
 		// Init  arrays' values to 0
 		// Kernel needs only 1 block since nClusters
@@ -412,51 +262,6 @@ void compress(RGB_TRIPLET *&inputImgRGB, RGB_TRIPLET *&outputImgRGB, int &inImgS
 	CUDA_CALL(cudaFreeHost(rgbCentroids));
 	CUDA_CALL(cudaFreeHost(pixelClusterCounter));
 }
-
-int main(int argc, char** argv) {
-	
-	//check parameters
-    if(argc != 4) 
-	{
-        printf("USAGE: %s <inputFileName.png> <outputFileName.png> <Number of Clusters(K)>\n", argv[0]);
-        return -1;
-    }
-	
-	// Read the arguments
-    const char* inputFile = argv[1];
-	if (!exits(inputFile))
-	{
-		printf("ERROR: File '%s' does not exits.\n", inputFile);
-        return -1;
-	}
-	
-	// init device
-	cudaSetDevice(0);
-	CUDA_CALL(cudaSetDeviceFlags(cudaDeviceMapHost));
-	cudaDeviceSynchronize();
-	cudaThreadSynchronize();
-	
-    const char* outputFile = argv[2];
-	nCentroids = atoi(argv[3]);
-	nCentroids = (nCentroids > 256) ? 256 : nCentroids;
-	
-	//input & output image data
-	int inImgSize;
-	RGB_TRIPLET *inputImgRGB;
-	RGB_TRIPLET *outputImgRGB;
-
-	loadRawImage(inputFile, inputImgRGB, inImgSize);
-    compress(inputImgRGB, outputImgRGB, inImgSize);
-	saveRawImage(outputFile, outputImgRGB, inImgSize);
-
-    delete outputImgRGB;
-	
-	std::cout << "Done" << std::endl;
-	
-    return 0;
-}
-
-
 
 
 
