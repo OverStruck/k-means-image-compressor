@@ -1,6 +1,6 @@
 
 CFLAGS = -std=c++11
-CUDA_FLAGS = -lcuda -lcudart
+CUDA_FLAGS = -lcuda -lcudart -I/usr/local/cuda/include
 LODEPNG = dep/lodepng/
 CSP = dep/ColorSpace/src/
 
