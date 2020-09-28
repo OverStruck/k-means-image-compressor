@@ -22,7 +22,7 @@ main.o:
 	g++ $(CFLAGS) -c main.cpp -o main.o $(CUDA_FLAGS)
 	
 kmeansCompressor: lodepng.o ColorSpace.o kmeansCompressor.o main.o
-	nvcc  $(CFLAGS) main.o kmeansCompressor.o lodepng.o ColorSpace.o Comparison.o Conversion.o -o kmeansCompressor2 $(CUDA_FLAGS)
+	nvcc  $(CFLAGS) main.o kmeansCompressor.o lodepng.o ColorSpace.o Comparison.o Conversion.o -o kmeansCompressor $(CUDA_FLAGS)
 	
 kmeansCompressor.o:
 	nvcc $(CFLAGS) kmeansCompressor.cu -dc -o kmeansCompressor.o  $(CUDA_FLAGS)
