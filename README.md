@@ -1,8 +1,8 @@
 # K-means-image-compressor
 This project provides a practical example of an application for [k-means clustering](https://en.wikipedia.org/wiki/K-means_clustering) __outside__ of machine learning.
 
-We use K-means clustering on an image to "compress" it's color space. 
-I.e from 256 bits to, say 2-bits. 
+We use K-means clustering on an image to "compress" it's color palette. 
+I.e from 256 colors to, say 2 colors. 
 
 # Examples
 Original | Using 2 clusters | Using 10 clusters 
