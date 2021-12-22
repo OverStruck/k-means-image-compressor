@@ -4,7 +4,7 @@
 class RgbSums
 {
 public:
-    unsigned int size = 0;
+    uint8_t size = 0;
     unsigned int *red = nullptr, *green = nullptr, *blue = nullptr;
     RgbSums(){};
     RgbSums(const uint8_t numberOfCentroids)
@@ -13,7 +13,7 @@ public:
     }
     void init(const uint8_t numberOfCentroids)
     {
-        size = static_cast<unsigned int>(numberOfCentroids);
+        size = numberOfCentroids;
         red = new unsigned int[size];
         green = new unsigned int[size];
         blue = new unsigned int[size];
