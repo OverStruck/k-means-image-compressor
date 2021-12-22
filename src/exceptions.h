@@ -1,6 +1,8 @@
 #ifndef K_MEANS_IMAGE_COMPRESSOR_EXCEPTION
 #define K_MEANS_IMAGE_COMPRESSOR_EXCEPTION
+
 #include <stdexcept>
+
 namespace kmic
 {
     class MissingRequiredInputs : public std::exception
@@ -65,7 +67,7 @@ namespace kmic
             return message.c_str();
         }
     };
-    //InvalidImageType
+
     class InvalidImageType : public std::exception
     {
         std::string message = "Configuration error: ";

@@ -1,14 +1,17 @@
 #ifndef K_MEANS_IMAGE_COMPRESSOR_HELPER_FUNCS
 #define K_MEANS_IMAGE_COMPRESSOR_HELPER_FUNCS
+
 #include "exceptions.h"
 #include "Image.h"
 #include "Centroids.h"
 #include "dep/lodepng/lodepng.h"
+
 #include "exceptions.h"
 #include <bits/stdc++.h>
 
 #define cimg_display 0
 #include "dep/CImg/CImg.h"
+
 namespace kmic
 {
     Image *loadJPGImage(const char *inputFileName)
@@ -34,6 +37,7 @@ namespace kmic
         printf("Image loaded: (%zu x %zu)\n\n", inputImage->width, inputImage->height);
         return inputImage;
     }
+
     Image *loadPNGImage(const char *inputFileName)
     {
         printf("Loading image...\n");
@@ -58,6 +62,7 @@ namespace kmic
         printf("Image loaded: (%zu x %zu)\n\n", inputImage->width, inputImage->height);
         return inputImage;
     }
+
     Image *loadRawImage(const std::string &inputFileName)
     {
         std::string fileExtension = inputFileName.substr(inputFileName.find_last_of(".") + 1);

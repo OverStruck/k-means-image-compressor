@@ -1,5 +1,6 @@
 #ifndef K_MEANS_IMAGE_COMPRESSOR_CONFIG
 #define K_MEANS_IMAGE_COMPRESSOR_CONFIG
+
 #include "exceptions.h"
 #include "InputParser.h"
 
@@ -7,6 +8,7 @@
 #include <sys/stat.h>
 #include <algorithm>
 #include <cstdarg>
+
 namespace kmic
 {
     void LOG_IF(const bool condition, const char *format, ...)
@@ -26,11 +28,13 @@ namespace kmic
         std::string ifn;
         std::string ofn;
         uint8_t k;
+
         bool fileExist(const std::string &fileName)
         {
             struct stat buffer;
             return (stat(fileName.c_str(), &buffer) == 0);
         }
+
         uint8_t parseK(const std::string &number)
         {
             int thisK;
@@ -63,24 +67,35 @@ namespace kmic
         Config(const InputParser &input)
         {
             std::string prgName = input.getCmdOption("prgName");
-            // if input.
+
             ifn = input.getCmdOption("-i");
+            //check input file
             if (ifn.empty())
             {
                 throw ConfigError("Missing REQUIRED input file name", prgName);
             }
-            //check input file
+
             if (!fileExist(ifn))
             {
                 prgName = ""; //lazy way
                 throw ConfigError("Input file does NOT exists!", prgName);
             }
-            //initialize vars
+
+            //initialize required config args
             ofn = input.getCmdOption("-o");
+            //check output file names
             if (ofn.empty())
             {
                 throw ConfigError("Missing REQUIRED output file name", prgName);
             }
+
+            std::string fe = ofn.substr(ofn.find_last_of(".") + 1);
+            if (fe != "png" || fe != "jpg" || fe != "jpeg")
+            {
+                prgName = ""; //lazy way
+                throw ConfigError("Invalid output file name!\nOnly png/jpg/jpeg extensions are supported", prgName);
+            }
+
             k = parseK(input.getCmdOption("-k"));
         }
         //getters
@@ -88,14 +103,17 @@ namespace kmic
         {
             return ifn.c_str();
         }
+
         const char *getOfn()
         {
             return ofn.c_str();
         }
-        const std::string& getifn()
+
+        const std::string &getifn()
         {
             return ifn;
         }
+
         uint8_t getK()
         {
             return k;

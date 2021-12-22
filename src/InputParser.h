@@ -1,9 +1,11 @@
 #ifndef INPUT_PARSER_H
 #define INPUT_PARSER_H
+
 #include "exceptions.h"
 #include <string>
 #include <vector>
 #include <algorithm>
+
 namespace kmic
 {
     class InputParser
@@ -25,6 +27,7 @@ namespace kmic
             for (int i = 1; i < argc; ++i)
                 this->tokens.push_back(std::string(argv[i]));
         }
+
         const std::string &getCmdOption(const std::string &option) const
         {
             std::vector<std::string>::const_iterator itr;
@@ -36,6 +39,7 @@ namespace kmic
             static const std::string empty_string("");
             return empty_string;
         }
+
         bool cmdOptionExists(const std::string &option) const
         {
             return std::find(this->tokens.begin(), this->tokens.end(), option) != this->tokens.end();

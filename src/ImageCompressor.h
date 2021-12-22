@@ -7,24 +7,21 @@
 
 #include <cmath>
 #include <limits>
-#include <iostream>
-
 #include <chrono>
+#include <iostream>
 
 namespace kmic
 {
     class ImageCompressor
     {
     private:
-        bool Cie2000Comparison = false;
+        RgbSums rgbSums;
         Image *inputImage;
-        uint8_t numberOfCentroids;
-
+        size_t *labelArray;
         Centroids centroids;
         Centroids prevCentroids;
-        RgbSums rgbSums;
-
-        size_t *labelArray;
+        uint8_t numberOfCentroids;
+        bool Cie2000Comparison = false;
         unsigned int *pixelClusterCounter;
 
         void process()
@@ -42,6 +39,7 @@ namespace kmic
             sumClusters();
             generateNewCentroids();
         }
+
         void assignLabels()
         {
             for (size_t j = 0; j < inputImage->size; j++)
@@ -61,6 +59,7 @@ namespace kmic
                 labelArray[j] = label;
             }
         }
+
         void assignLabels2()
         {
             for (size_t j = 0; j < inputImage->size; j++)
@@ -81,6 +80,7 @@ namespace kmic
                 labelArray[j] = label;
             }
         }
+
         float getEuclideanDistance(const size_t j, const uint8_t i)
         {
             const int rd = inputImage->red[j] - centroids.red[i];
@@ -88,6 +88,7 @@ namespace kmic
             const int bd = inputImage->blue[j] - centroids.blue[i];
             return sqrtf((powf(rd, 2.0) + powf(gd, 2.0) + powf(bd, 2.0)));
         }
+
         void sumClusters()
         {
             rgbSums.clear();
@@ -103,6 +104,7 @@ namespace kmic
                 pixelClusterCounter[clusterLabel] += 1;
             }
         }
+
         void generateNewCentroids()
         {
             for (unsigned int i = 0; i < numberOfCentroids; i++)
@@ -122,6 +124,7 @@ namespace kmic
                 }
             }
         }
+
         float getEuclideanDistance(int i)
         {
             const int rd = prevCentroids.red[i] - centroids.red[i];
@@ -129,6 +132,7 @@ namespace kmic
             const int bd = prevCentroids.blue[i] - centroids.blue[i];
             return sqrtf((powf(rd, 2.0) + powf(gd, 2.0) + powf(bd, 2.0)));
         }
+
         bool areCentroidsSame()
         {
             int same = false;
@@ -146,29 +150,33 @@ namespace kmic
     public:
         ImageCompressor(Image *_image, const Centroids &_centroids, const bool _Cie2000Comparison)
         {
-            Cie2000Comparison = _Cie2000Comparison;
             inputImage = _image;
-            numberOfCentroids = _centroids.size;
             centroids.init(_centroids.size);
-            prevCentroids.init(_centroids.size);
-            rgbSums.init(_centroids.size);
             centroids.copy(_centroids);
-            pixelClusterCounter = new unsigned int[_centroids.size];
+            rgbSums.init(_centroids.size);
+            numberOfCentroids = _centroids.size;
+            prevCentroids.init(_centroids.size);
             labelArray = new size_t[_image->size];
+            Cie2000Comparison = _Cie2000Comparison;
+            pixelClusterCounter = new unsigned int[_centroids.size];
         }
+
         void compress()
         {
             int iterCount = 0;
             auto tStart = std::chrono::high_resolution_clock::now();
+
             do
             {
                 prevCentroids.copy(centroids);
                 process();
                 iterCount++;
             } while (areCentroidsSame());
-            printf("\nDone compressing image. Total iterations: %d\n", iterCount);
+
             auto tEnd = std::chrono::high_resolution_clock::now();
             const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(tEnd - tStart).count();
+
+            printf("\nDone compressing image. Total iterations: %d\n", iterCount);
             std::cout << "It took " << duration << " milliseconds to do this work\n\n";
 
             printf("Final Centroids:\n");
