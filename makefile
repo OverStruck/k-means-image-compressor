@@ -1,31 +1,60 @@
 
-CFLAGS = -std=c++11
-CUDA_FLAGS = -lcuda -lcudart -I/usr/local/cuda/include
-LODEPNG = dep/lodepng/
-CSP = dep/ColorSpace/src/
+#default compiler flags
+CFLAGS = -std=c++17
+#source directory
+SOURCE_DIR = src/
+#type of build: debug or release
+BUILD_TYPE = debug
+#build directory
+BUILD_DIR = build/$(BUILD_TYPE)/
+#list of all object files
+USER_OBJS = $(wildcard $(BUILD_DIR)*.o)
+CSP = $(SOURCE_DIR)dep/ColorSpace/src/
+LIBS = -ljpeg -lpng -lz -lpthread
+#default rule
+all: prep release
 
-default: kmeansCompressor
+#-------------------------------
+#=======DEBUG SETUP=============
+#-------------------------------
+#debug compiler flags
+debug: CFLAGS += -Wall -Werror -pedantic -Wextra -g
+#debug rule
+debug: prep kMeansImageCompressor
 
-lodepng.o:
-	nvcc -dc $(LODEPNG)lodepng.cpp -o lodepng.o
-	
-Conversion.o: 
-	g++ -c $(CSP)Conversion.cpp -o Conversion.o
+#-------------------------------
+#=======RELEASE SETUP===========
+#-------------------------------
+#release compiler flags
+release: CFLAGS += -O3 -Wall -DNDEBUG
+#set build type to release instead of debug
+release: BUILD_TYPE = release
+#release rule
+release: prep kMeansImageCompressor
 
-Comparison.o: Conversion.o
-	g++ -c $(CSP)Comparison.cpp -o Comparison.o
-	
-ColorSpace.o: Comparison.o
-	g++ -c $(CSP)ColorSpace.cpp -o ColorSpace.o
-	
-main.o:
-	g++ $(CFLAGS) -c main.cpp -o main.o $(CUDA_FLAGS)
-	
-kmeansCompressor: lodepng.o ColorSpace.o kmeansCompressor.o main.o
-	nvcc  $(CFLAGS) main.o kmeansCompressor.o lodepng.o ColorSpace.o Comparison.o Conversion.o -o kmeansCompressor $(CUDA_FLAGS)
-	
-kmeansCompressor.o:
-	nvcc $(CFLAGS) kmeansCompressor.cu -dc -o kmeansCompressor.o  $(CUDA_FLAGS)
+default: kMeansImageCompressor
+
+Conversion:
+	g++ $(CFLAGS) -c $(CSP)Conversion.cpp -o $(BUILD_DIR)Conversion.o
+
+Comparison: Conversion
+	g++ $(CFLAGS) -c $(CSP)Comparison.cpp -o $(BUILD_DIR)Comparison.o
+
+ColorSpace: Comparison
+	g++ $(CFLAGS) -c $(CSP)ColorSpace.cpp -o $(BUILD_DIR)ColorSpace.o
+
+lodepng:
+	g++ $(CFLAGS) -c $(SOURCE_DIR)dep/lodepng/lodepng.cpp -o $(BUILD_DIR)lodepng.o
+
+main.o: lodepng ColorSpace
+	g++ $(CFLAGS) -c $(SOURCE_DIR)main.cpp -o $(BUILD_DIR)main.o
+
+kMeansImageCompressor: main.o
+	g++ $(CFLAGS) $(USER_OBJS) -o kMeansImageCompressor
+
+prep:
+	mkdir -p build/debug build/release
 
 clean:
-	rm -f *.o kmeansCompressor
+	rm -r build
+	rm -f kMeansImageCompressor
