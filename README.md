@@ -1,3 +1,5 @@
+![CodeQL](https://github.com/OverStruck/k-means-image-compressor/workflows/CodeQL/badge.svg)
+
 # K-means-image-compressor
 This project provides a practical example of an application for [k-means clustering](https://en.wikipedia.org/wiki/K-means_clustering) __outside__ of machine learning.
 
