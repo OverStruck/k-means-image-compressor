@@ -31,6 +31,12 @@ int main(int argc, char **argv)
 	{
 		std::cerr << e.what() << '\n';
 	}
+	catch(...)
+	{
+		std::exception_ptr p = std::current_exception();
+        std::clog <<(p ? p.__cxa_exception_type()->name() : "null") << std::endl;
+		std::cerr << "Unknown error happened :(" << std::endl;
+	}
 
 	return 0;
 }
