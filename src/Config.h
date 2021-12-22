@@ -90,7 +90,7 @@ namespace kmic
             }
 
             std::string fe = ofn.substr(ofn.find_last_of(".") + 1);
-            if (fe != "png" || fe != "jpg" || fe != "jpeg")
+            if (fe != "png" && fe != "jpg" && fe != "jpeg")
             {
                 prgName = ""; //lazy way
                 throw ConfigError("Invalid output file name!\nOnly png/jpg/jpeg extensions are supported", prgName);

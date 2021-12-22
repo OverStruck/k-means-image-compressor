@@ -54,7 +54,7 @@ public:
                  << "█████████████████"
                  << "\x1b[0m";
 
-        printf("Centroid[%d]: %s RGB(%d %d %d)\n", index + 1, colorBar.str().c_str(), r, g, b);
+        printf("Centroid[%d]\t= [%3d, %3d, %3d]\t=> %s\n", index + 1, r, g, b, colorBar.str().c_str());
     }
 
     void print()
@@ -64,7 +64,7 @@ public:
             printColor(i);
         }
     }
-    
+
     ~Centroids()
     {
         delete[] red;
