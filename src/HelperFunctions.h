@@ -83,9 +83,31 @@ namespace kmic
 
     void saveRawImage(Image *&outputImagePixels, const char *outputFileName)
     {
-        // Prepare data for output
+        printf("\nWriting compressed image...\n");
+        const unsigned int width = outputImagePixels->width;
+        const unsigned int height = outputImagePixels->height;
+        cimg_library::CImg<unsigned char> outputImage(width, height, 1, 3);
+
+        size_t where = 0;
+        for (unsigned int y = 0; y < height; y++)
+        {
+            for (unsigned int x = 0; x < width; x++)
+            {
+                outputImage(x, y, 0, 0) = outputImagePixels->red[where];
+                outputImage(x, y, 0, 1) = outputImagePixels->green[where];
+                outputImage(x, y, 0, 2) = outputImagePixels->blue[where];
+                where++;
+            }
+        }
+        outputImage.save(outputFileName);
+        printf("Image '%s' saved to disk\n", outputFileName);
+    }
+
+    void savePNGImage(Image *&outputImagePixels, const char *outputFileName)
+    {
         printf("\nWriting compressed image...\n");
 
+        // Prepare data for output
         std::vector<unsigned char> outputImage;
         for (unsigned int i = 0; i < outputImagePixels->size; ++i)
         {
