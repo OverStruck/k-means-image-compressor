@@ -144,7 +144,7 @@ namespace kmic
             fn = fn.substr(0, xd) + ".png";
             printf("Output file format '%s' is not natively supported on your sistem\n", fe.c_str());
             printf("Using a backup saving method, your image will be saved as a PNG image (%s)\n", fn.c_str());
-            saveRawImageLodePNG(outputImagePixels, outputFileName);
+            saveRawImageLodePNG(outputImagePixels, fn.c_str());
         }
     }
 
