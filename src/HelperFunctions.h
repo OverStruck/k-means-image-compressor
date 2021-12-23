@@ -9,7 +9,10 @@
 #include "exceptions.h"
 #include <bits/stdc++.h>
 
+#define cimg_use_png 1
 #define cimg_display 0
+#define cimg_use_jpeg 1
+#define cimg_verbosity 0
 #include "dep/CImg/CImg.h"
 
 namespace kmic
@@ -72,7 +75,6 @@ namespace kmic
         }
         else if (fileExtension == "jpg" || fileExtension == "jpeg")
         {
-            printf("jpg image detected\n");
             return loadJPGImage(inputFileName.c_str());
         }
         else
@@ -81,7 +83,7 @@ namespace kmic
         }
     }
 
-    void saveRawImage(Image *&outputImagePixels, const char *outputFileName)
+    void saveRawImageCimg(Image *&outputImagePixels, const char *outputFileName)
     {
         printf("\nWriting compressed image...\n");
         const unsigned int width = outputImagePixels->width;
@@ -103,7 +105,7 @@ namespace kmic
         printf("Image '%s' saved to disk\n", outputFileName);
     }
 
-    void savePNGImage(Image *&outputImagePixels, const char *outputFileName)
+    void saveRawImageLodePNG(Image *&outputImagePixels, const char *outputFileName)
     {
         printf("\nWriting compressed image...\n");
 
@@ -126,6 +128,24 @@ namespace kmic
             exit(-1);
         }
         printf("Image '%s' saved to disk\n", outputFileName);
+    }
+
+    void saveRawImage(Image *outputImagePixels, const char *outputFileName)
+    {
+        try
+        {
+            saveRawImageCimg(outputImagePixels, outputFileName);
+        }
+        catch (const cimg_library::CImgIOException &e)
+        {
+            std::string fn(outputFileName);
+            const std::size_t xd = fn.find_last_of(".");
+            const std::string fe = fn.substr(xd + 1);
+            fn = fn.substr(0, xd) + ".png";
+            printf("Output file format '%s' is not natively supported on your sistem\n", fe.c_str());
+            printf("Using a backup saving method, your image will be saved as a PNG image (%s)\n", fn.c_str());
+            saveRawImageLodePNG(outputImagePixels, outputFileName);
+        }
     }
 
     void initUserCentroids(Centroids &centroids)
