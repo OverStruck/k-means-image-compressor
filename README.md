@@ -1,5 +1,3 @@
-![CodeQL](https://github.com/OverStruck/k-means-image-compressor/workflows/CodeQL/badge.svg)
-
 # K-means-image-compressor
 This project provides a practical example of an application for [k-means clustering](https://en.wikipedia.org/wiki/K-means_clustering) __outside__ of machine learning.
 
@@ -25,6 +23,12 @@ make debug
 # compile release build
 make release
 ```
+
+### NOTE:
+
+You may need to install libpng and libjpeg package  for handling JPEG & PNG images
+- CentOS: `yum install libjpeg-devel libpng-devel`
+- Ubuntu: `apt install libjpeg-dev libpng-dev`
 
 You may also be interested in the cuda branch of this project to see how this project is implemented using CUDA
 
